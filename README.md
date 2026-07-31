@@ -18,13 +18,13 @@ cmake --install build --prefix "$PWD/dist"
 export PATHIME_LIBRARY="$PWD/dist/lib/libpathime.so"
 ```
 
-(In this repository's sandbox, build under `/tmp` instead — see `CLAUDE.md`.)
-
 The install step matters: it lays `pathime-data/` beside the library, which is
 where the engines find their dictionaries by default. On Windows, build per
 `libpathime/BUILD.md` and point `PATHIME_LIBRARY` at `pathime.dll`; the
 binding adds that DLL's directory to the search path so the vendored backend
-DLLs beside it resolve. The Windows path is untested so far.
+DLLs beside it resolve.
+
+For detailed building instructions see [`libpathime/BUILD.md`](libpathime/BUILD.md).
 
 ## Use
 
@@ -69,7 +69,3 @@ A phone-like keyboard in the terminal: text field, candidate strip, on-screen
 keys. Digits tap the strip, arrows slide and page it, Ctrl+E cycles engines,
 Ctrl+T/Ctrl+R commit/discard, Ctrl+C quits.
 
-## For libpathime
-
-`BINDING-NOTES.md` records what binding this API taught us: the friction, the
-suggestions, and the decisions worth preserving.
