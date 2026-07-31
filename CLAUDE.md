@@ -6,8 +6,8 @@ code in this repository.
 ## Project Overview
 
 `libpathime-python` is a Python binding for `libpathime/` (a git submodule —
-**read-only in this repository**; anything it needs changed is recorded in
-`BINDING-NOTES.md` and taken back to that project). libpathime is a CJK input
+**read-only in this repository**; anything it needs changed is taken back to
+that project). libpathime is a CJK input
 method engine as a plain C library: five engines (Hangul, Anthy, Pinyin,
 Bopomofo, Table), a synchronous callback-based client interface, and a
 phone-keyboard composition model. Its public surface is one header,
@@ -51,7 +51,6 @@ What the C API's shape means for a binding, in brief:
 ```
 CLAUDE.md            # This file
 TODO.md              # Upcoming work only — start here for "what's next"
-BINDING-NOTES.md     # Pain points found while binding; to take back to libpathime
 libpathime/          # Submodule — the C library. DO NOT MODIFY here.
 src/pathime/         # The binding package
 tests/               # pytest suite driving the real library
@@ -81,5 +80,7 @@ PATHIME_LIBRARY=/tmp/pathime-build/lib/libpathime.so python -m pytest tests/
 - Follow libpathime's documentation habits: present tense, state what is true
   and why, keep commit messages short (subject line and a few sentences).
 - `TODO.md` holds upcoming work only; prune as things complete.
-- Pain points with the C API from a binding author's perspective go in
-  `BINDING-NOTES.md` as they are discovered, not reconstructed later.
+- Pain points with the C API from a binding author's perspective are taken
+  upstream as they are discovered, not reconstructed later. The first round
+  (BINDING-NOTES.md, now deleted) landed there; its rulings are in
+  libpathime's `docs/design-history.md` §12.
