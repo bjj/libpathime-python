@@ -67,6 +67,7 @@ __all__ = [
     "TableInvalid",
     "Width",
     "DEFAULT_MAX_CANDIDATES",
+    "engine_name",
     "has_engine",
     "init",
     "keysym_for_char",
@@ -426,7 +427,8 @@ def init(data_dir: str | None = None, resource_dir: str | None = None) -> None:
     """Initialize process-global state. Must succeed before engines exist.
 
     :param data_dir: directory the library may read and write (learned
-        frequencies, user dictionaries). None selects the library default.
+        frequencies, user dictionaries). None selects a platform-appropriate
+        default beneath the user's configuration directory.
     :param resource_dir: directory holding the shipped read-only data. None
         selects ``pathime-data`` beside the libpathime binary.
     """
@@ -442,6 +444,14 @@ def init(data_dir: str | None = None, resource_dir: str | None = None) -> None:
 def shutdown() -> None:
     """Release process-global state. Engines and contexts must be closed."""
     _lib().pathime_shutdown()
+
+
+def engine_name(engine_id: EngineId | int) -> str:
+    """Stable machine-readable engine name, e.g. ``"pinyin"``; ``""`` for a
+    value that is not an engine id. A key for configuration storage, not text
+    to put in front of a user. Answered whether or not this build contains
+    the engine — availability is :func:`has_engine`'s question."""
+    return _lib().pathime_engine_name(int(engine_id)).decode("utf-8")
 
 
 def has_engine(engine_id: EngineId) -> bool:
@@ -704,6 +714,10 @@ class Context(_OptionAccess):
     - ``on_composition_changed(composition: Composition)`` — the composition
       was replaced. The snapshot is fully copied, candidates included.
 
+    ``isolate=True`` calls :meth:`isolate_options` as the last step of
+    construction, for the caller who wants the engine's configuration read
+    once as a template rather than followed live.
+
     The current snapshot is always readable as :attr:`composition`.
 
     Exceptions raised inside callbacks cannot cross the C library; they are
@@ -719,6 +733,7 @@ class Context(_OptionAccess):
         on_commit=None,
         on_delete_surrounding=None,
         on_composition_changed=None,
+        isolate: bool = False,
     ):
         self._handle = None
         self._engine = engine
@@ -789,6 +804,8 @@ class Context(_OptionAccess):
             ctypes.byref(handle)))
         self._handle = handle
         engine._contexts.add(self)
+        if isolate:
+            self.isolate_options()
 
     # ---- lifecycle ----
 
@@ -851,6 +868,32 @@ class Context(_OptionAccess):
         text = "".join(self._committed)
         self._committed.clear()
         return text
+
+    # ---- options ----
+
+    def isolate_options(self) -> None:
+        """Isolate this context from engine-level option changes.
+
+        Every option the engine implements that this context has not itself
+        set is set here, at its current effective value. Afterwards engine-
+        level sets and resets pass this context by, so no callback of this
+        context can fire under an :class:`Engine` setter; the engine's
+        configuration becomes a template read now rather than a live
+        influence. Nothing resolves differently during the copy, so it
+        dispatches no callbacks.
+
+        Each copy is an ordinary override: :meth:`option_is_set` answers True
+        and :meth:`reset_option` drops one, re-attaching that option to the
+        engine. On the table engine the copy covers the table choice itself —
+        a context isolated while no table is named keeps "no table" even if
+        the engine later chooses one — and a context-level table switch after
+        isolation no longer re-derives the options the old table declared;
+        reset those to let the new table speak.
+
+        On :class:`OutOfMemoryError` options already copied stay copied and
+        calling again resumes where the failed call stopped.
+        """
+        self._mutate(_lib().pathime_context_isolate_options(self._handle))
 
     # ---- input ----
 
