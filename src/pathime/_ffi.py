@@ -179,6 +179,7 @@ def _declare(lib: ctypes.CDLL) -> None:
     fn("pathime_shutdown", None)
 
     # Engine
+    fn("pathime_engine_name", c_char_p, c_int)
     fn("pathime_has_engine", c_bool, c_int)
     fn("pathime_engine_create", status, c_int, POINTER(engine_p))
     fn("pathime_engine_destroy", None, engine_p)
@@ -219,6 +220,7 @@ def _declare(lib: ctypes.CDLL) -> None:
     fn("pathime_context_set_option_string", status, ctx_p, c_int, c_char_p)
     fn("pathime_engine_reset_option", status, engine_p, c_int)
     fn("pathime_context_reset_option", status, ctx_p, c_int)
+    fn("pathime_context_isolate_options", status, ctx_p)
 
     fn("pathime_engine_get_option_bool", status, engine_p, c_int,
        POINTER(c_bool))

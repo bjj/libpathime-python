@@ -12,6 +12,14 @@ def test_keysym_for_char_follows_x11_rule():
     assert pathime.keysym_for_char("中") == 0x01000000 + 0x4E2D
 
 
+def test_engine_enum_matches_library_names():
+    # The check pathime_engine_name exists for: a transposed enum value would
+    # pass every structural check and create the wrong engine.
+    for engine_id in pathime.EngineId:
+        assert pathime.engine_name(engine_id) == engine_id.name.lower()
+    assert pathime.engine_name(99) == ""
+
+
 def test_key_event_accepts_characters():
     event = KeyEvent("Q", layout_key="q", modifiers=Mod.SHIFT)._to_c()
     assert event.keysym == ord("Q")

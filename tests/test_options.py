@@ -83,6 +83,45 @@ def test_full_inventory_walk(pinyin):
                 assert pathime.option_value_name(Option(i), value) != ""
 
 
+def test_isolated_context_is_passed_by(pinyin):
+    changes = []
+    with pathime.Context(pinyin,
+                         on_composition_changed=changes.append) as ctx:
+        ctx.isolate_options()
+        # Every implemented option is now an ordinary override here...
+        assert ctx.option_is_set(Option.LATIN_WIDTH) is True
+        # ...and only those: options this engine does not implement stay unset.
+        assert ctx.option_is_set(Option.HANGUL_LAYOUT) is False
+
+        before = len(changes)
+        pinyin.set_option(Option.LATIN_WIDTH, Width.FULL)
+        try:
+            assert ctx.get_option(Option.LATIN_WIDTH) == Width.HALF
+            assert len(changes) == before  # the broadcast skipped this context
+        finally:
+            pinyin.reset_option(Option.LATIN_WIDTH)
+
+        # reset_option drops one copy and re-attaches that option.
+        ctx.reset_option(Option.LATIN_WIDTH)
+        pinyin.set_option(Option.LATIN_WIDTH, Width.FULL)
+        try:
+            assert ctx.get_option(Option.LATIN_WIDTH) == Width.FULL
+        finally:
+            pinyin.reset_option(Option.LATIN_WIDTH)
+
+
+def test_isolate_at_construction_reads_engine_as_template(pinyin):
+    pinyin.set_option(Option.CHINESE_VARIANT, ChineseVariant.TRADITIONAL_ONLY)
+    try:
+        with pathime.Context(pinyin, isolate=True) as ctx:
+            pinyin.reset_option(Option.CHINESE_VARIANT)
+            assert (ctx.get_option(Option.CHINESE_VARIANT)
+                    == ChineseVariant.TRADITIONAL_ONLY)
+            assert ctx.option_is_set(Option.CHINESE_VARIANT) is True
+    finally:
+        pinyin.reset_option(Option.CHINESE_VARIANT)
+
+
 def test_engine_set_updates_open_context_immediately(pinyin):
     changes = []
     with pathime.Context(pinyin,
