@@ -2,9 +2,6 @@
 
 Upcoming work only; prune as things complete.
 
-- [ ] Verify the Windows path: build libpathime with MSVC, check
-      `pathime.dll` loads through `PATHIME_LIBRARY` + `add_dll_directory`,
-      run the test suite. Written to work, never executed.
 - [ ] Bopomofo has no test of its own beyond the shared option coverage; add
       a keystroke-to-candidate test (needs a bopomofo keystroke table to
       assert against).

@@ -35,6 +35,22 @@ a complaint; the last section is what made it easy and should be preserved.
   one line in BUILD.md's "What gets produced": consuming from outside the
   tree means installing first (or enabling the demo to get the staged copy).
 
+- **And an installed tree on Windows does not load.** The install stages the
+  vendored backend DLLs beside `pathime.dll` but not pyzy's vcpkg runtime
+  (`glib-2.0-0.dll`, `sqlite3.dll`, `iconv-2.dll`, `intl-8.dll`,
+  `pcre2-8.dll`) — vcpkg's applocal step populates only the *build* tree's
+  `bin/`. `docs/windows-port.md` says so and says to copy them alongside, but
+  the symptom lands far from the sentence: `LoadLibrary` reports "Could not
+  find module 'pathime.dll' (or one of its dependencies)", naming a file that
+  exists and nothing about pyzy, and diagnosing means loading each DLL in the
+  tree by hand until one fails. Together with the item above this makes both
+  obvious ways of pointing a binding at the library — the build tree and the
+  installed tree — incomplete on Windows in a different way each.
+  **Suggestion:** make the install complete (vcpkg's
+  `X_VCPKG_APPLOCAL_DEPS_INSTALL=ON` exists for exactly this), or failing
+  that, put the copy step in BUILD.md's "What gets produced", where a
+  deployer actually reads — today it lives only in the port notes.
+
 ## Transcription — what a binding must copy by hand, and what checks it
 
 A ctypes/P/Invoke binding re-declares every enum, constant, and struct layout
