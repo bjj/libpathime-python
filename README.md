@@ -1,6 +1,6 @@
 # pathime — Python binding for libpathime
 
-A ctypes binding for [libpathime](libpathime/README.md), the CJK input method
+A ctypes binding for [libpathime](https://github.com/bjj/libpathime), the CJK input method
 engine library: Korean Hangul, Japanese kana–kanji conversion, Chinese Pinyin
 and Bopomofo, and table-driven methods (Cangjie, Wubi, …), behind one
 synchronous phone-keyboard-shaped API.
@@ -24,7 +24,8 @@ where the engines find their dictionaries by default. On Windows, build per
 binding adds that DLL's directory to the search path so the vendored backend
 DLLs beside it resolve.
 
-For detailed building instructions see [`libpathime/BUILD.md`](libpathime/BUILD.md).
+For detailed building instructions see [`libpathime/BUILD.md`](https://github.com/bjj/libpathime/blob/master/BUILD.md)
+(the same file in the submodule checkout).
 
 ## Use
 
