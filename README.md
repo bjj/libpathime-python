@@ -8,6 +8,24 @@ synchronous phone-keyboard-shaped API.
 Pure Python — nothing here compiles. The same package serves Linux and
 Windows; only libpathime itself is built per platform.
 
+## Install from a release
+
+Each [release](https://github.com/bjj/libpathime-python/releases) carries the
+sdist and a pure wheel. The shared library comes from the matching
+[libpathime release](https://github.com/bjj/libpathime/releases) — an install
+tree with `pathime-data/` already beside the library:
+
+```bash
+pip install pathime-0.1.0-py3-none-any.whl
+mkdir libpathime-0.1.0 && tar xf libpathime-0.1.0-linux-x86_64.tar.gz -C libpathime-0.1.0
+export PATHIME_LIBRARY="$PWD/libpathime-0.1.0/lib/libpathime.so"
+```
+
+(The archive has no top-level directory — it unpacks straight to `lib/`,
+`bin/`.)
+
+On Windows, unpack the zip and point `PATHIME_LIBRARY` at `bin\pathime.dll`.
+
 ## Build libpathime, point the binding at it
 
 ```bash
