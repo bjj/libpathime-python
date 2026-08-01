@@ -5,11 +5,16 @@ on:
     branches: [master]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
@@ -47,45 +52,82 @@ jobs:
           python -m pytest -v
 
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2025
+    timeout-minutes: 90
     steps:
       # The codegen tools run with the CRT in binary mode; a CRLF checkout
       # leaves stray CRs in parsed dictionary tokens (BUILD.md).
       - name: Checkout with LF line endings
         run: git config --global core.autocrlf false
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
-      # vcpkg's default binary cache; after the first run glib and sqlite3
-      # restore from here instead of rebuilding (~30 min saved).
-      - name: Cache vcpkg binary archives
-        uses: actions/cache@v4
+      # The image's own CMake rolls with the fleet; 4.2.3 is new enough to
+      # find Visual Studio on the windows-2025 image. Same pin as libpathime's
+      # own CI.
+      - uses: jwlawson/actions-setup-cmake@0d6a7d60b009d01c9e7523be22153ff8f19460d3 # v2.2.0
         with:
-          path: ~\AppData\Local\vcpkg\archives
-          key: vcpkg-archives-x64-windows
+          cmake-version: 4.2.3
 
-      - name: Install pyzy dependencies via vcpkg
-        run: |
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg" install glib:x64-windows sqlite3:x64-windows
+      - name: Resolve vcpkg baseline
+        id: vcpkg
+        run: echo "rev=$(git -C C:\vcpkg rev-parse HEAD)" >> $env:GITHUB_OUTPUT
 
-      # The windows-msvc preset carries the vcpkg toolchain (via VCPKG_ROOT)
-      # and builds serially — the VS generator races under /m.
+      # restore/save rather than the combined action: the combined form saves
+      # only when the whole job succeeds, so a failure after `vcpkg install`
+      # throws away a from-source glib build (~25 minutes). The exact-rev key
+      # rarely repeats across image rolls; the prefix fallback restores the
+      # newest previous tree and `vcpkg install` becomes a near-no-op.
+      - name: Restore vcpkg installed tree
+        id: vcpkg-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-windows-2025-${{ steps.vcpkg.outputs.rev }}
+          restore-keys: vcpkg-windows-2025-
+
+      - name: Install pyzy's dependencies
+        run: vcpkg install glib:x64-windows sqlite3:x64-windows pkgconf:x64-windows
+
+      - name: Save vcpkg installed tree
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-windows-2025-${{ steps.vcpkg.outputs.rev }}
+
+      # The windows-ninja preset runs from a developer prompt; the msvc preset
+      # would need the windows-2022 image — its Visual Studio 17 generator
+      # finds nothing on the 2025 image, which ships only Visual Studio 18.
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: x64
+
+      # VCPKG_ROOT on the steps, not the job: vcvars points it at the vcpkg
+      # bundled with Visual Studio, and the preset reads it. The link pool
+      # serializes link steps only — vcpkg's applocal step copies the same
+      # runtime DLLs beside every executable, and two concurrent copies of
+      # the same DLL collide.
       - name: Configure libpathime
         working-directory: libpathime
-        run: >
-          cmake --preset windows-msvc
+        env:
+          VCPKG_ROOT: C:\vcpkg
+        run: >-
+          cmake --preset windows-ninja
           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}\dist
           -DLIBPATHIME_REQUIRE_BACKENDS=ON
+          -DCMAKE_JOB_POOLS=link=1 -DCMAKE_JOB_POOL_LINK=link
 
       - name: Build
         working-directory: libpathime
-        run: cmake --build --preset windows-msvc
+        env:
+          VCPKG_ROOT: C:\vcpkg
+        run: cmake --build --preset windows-ninja
 
       - name: Install
-        run: cmake --install libpathime\build\windows-msvc --config Release
+        run: cmake --install libpathime\build\windows-ninja
 
       - uses: actions/setup-python@v5
         with:
