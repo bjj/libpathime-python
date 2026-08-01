@@ -1,3 +1,3 @@
 [submodule "libpathime"]
 	path = libpathime
-	url = ../libpathime.git
+	url = https://github.com/bjj/libpathime.git
