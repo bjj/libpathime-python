@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config \
+            libglib2.0-dev libsqlite3-dev uuid-dev
+
+      # REQUIRE_BACKENDS turns a silently skipped backend into a configure
+      # error. The install prefix is passed at configure time because
+      # pathime.pc bakes in absolute paths.
+      - name: Configure libpathime
+        run: >
+          cmake -S libpathime -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/dist
+          -DLIBPATHIME_REQUIRE_BACKENDS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Install
+        run: cmake --install build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test
+        env:
+          PATHIME_LIBRARY: ${{ github.workspace }}/dist/lib/libpathime.so
+        run: |
+          python -m pip install pytest
+          python -m pytest -v
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      # The codegen tools run with the CRT in binary mode; a CRLF checkout
+      # leaves stray CRs in parsed dictionary tokens (BUILD.md).
+      - name: Checkout with LF line endings
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # vcpkg's default binary cache; after the first run glib and sqlite3
+      # restore from here instead of rebuilding (~30 min saved).
+      - name: Cache vcpkg binary archives
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\vcpkg\archives
+          key: vcpkg-archives-x64-windows
+
+      - name: Install pyzy dependencies via vcpkg
+        run: |
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg" install glib:x64-windows sqlite3:x64-windows
+
+      # The windows-msvc preset carries the vcpkg toolchain (via VCPKG_ROOT)
+      # and builds serially — the VS generator races under /m.
+      - name: Configure libpathime
+        working-directory: libpathime
+        run: >
+          cmake --preset windows-msvc
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}\dist
+          -DLIBPATHIME_REQUIRE_BACKENDS=ON
+
+      - name: Build
+        working-directory: libpathime
+        run: cmake --build --preset windows-msvc
+
+      - name: Install
+        run: cmake --install libpathime\build\windows-msvc --config Release
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test
+        env:
+          PATHIME_LIBRARY: ${{ github.workspace }}\dist\bin\pathime.dll
+        run: |
+          python -m pip install pytest
+          python -m pytest -v
