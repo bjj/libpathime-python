@@ -4,17 +4,9 @@ Upcoming work only; prune as things complete.
 
 ## Next session: GitHub, CI, releases
 
-- [ ] Move submodule `libpathime` pin to a version tag.
-- [ ] Give ourselves a version tag.
-- [ ] Push `libpathime` to `github.com/bjj/libpathime` first — its vendored
-      forks (pyzy, anthy-unicode, ibus-table-chinese) are already on GitHub,
-      so it is the only missing link in the submodule chain. Then push this
-      repo to `github.com/bjj/libpathime-python`.
-- [ ] **Before pushing this repo: update the submodule to latest** and commit
-      the new pin. `.gitmodules` already points at GitHub, but the local
-      checkout's config still fetches from orion (deliberately unsynced), so
-      pull the latest libpathime there first, then `git submodule sync` once
-      GitHub is live.
+- [ ] Give ourselves a version tag (after CI is green). Pushing `v0.1.0`
+      triggers `release.yml`, which drafts a GitHub release with the sdist and
+      pure wheel; publish by hand after a look at the assets.
 - [ ] Turn on CI: `.github/workflows/ci.yml` is drafted but has never run —
       budget a debugging round. Linux builds with Ninja and tests against the
       install tree; Windows uses the `windows-msvc` preset with vcpkg's
@@ -22,15 +14,11 @@ Upcoming work only; prune as things complete.
       (slow); later runs restore from the cache. If the serial MSVC build is
       too slow even cached, switch to the `windows-ninja` preset plus a
       dev-prompt action (e.g. `ilammy/msvc-dev-cmd`).
-- [ ] Release packages. Proposed shape, keeping the env-var contract: a tag
-      builds (a) sdist + pure wheel of the binding and (b) per-OS zips of the
-      libpathime `cmake --install` tree — library, `pathime-data/`, and
-      THIRD-PARTY.md for the license rollup — attached to a GitHub release.
-      Platform wheels that bundle the library stay deferred until someone
+- [ ] Platform wheels that bundle the library stay deferred until someone
       needs `pip install pathime` to work with no separate download.
-- [ ] sdist contents: setuptools does not include `tests/` or `demo/` by
-      default; decide whether they belong in the sdist when wiring the
-      release job.
+      (`release.yml` ships sdist + pure wheel only; the per-OS install trees
+      proposed earlier already exist as libpathime's own release assets, so
+      the notes point there instead of rebuilding them here.)
 - [ ] add a screenshot of the demo
 
 ## Later
