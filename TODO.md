@@ -4,6 +4,8 @@ Upcoming work only; prune as things complete.
 
 ## Next session: GitHub, CI, releases
 
+- [ ] Move submodule `libpathime` pin to a version tag.
+- [ ] Give ourselves a version tag.
 - [ ] Push `libpathime` to `github.com/bjj/libpathime` first — its vendored
       forks (pyzy, anthy-unicode, ibus-table-chinese) are already on GitHub,
       so it is the only missing link in the submodule chain. Then push this
@@ -29,6 +31,7 @@ Upcoming work only; prune as things complete.
 - [ ] sdist contents: setuptools does not include `tests/` or `demo/` by
       default; decide whether they belong in the sdist when wiring the
       release job.
+- [ ] add a screenshot of the demo
 
 ## Later
 
