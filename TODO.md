@@ -7,10 +7,12 @@ Upcoming work only; prune as things complete.
 - [ ] Push `libpathime` to `github.com/bjj/libpathime` first — its vendored
       forks (pyzy, anthy-unicode, ibus-table-chinese) are already on GitHub,
       so it is the only missing link in the submodule chain. Then push this
-      repo to `github.com/bjj/libpathime-python`. `.gitmodules` uses a
-      relative URL (`../libpathime.git`), which resolves against whichever
-      remote a clone came from, so orion and GitHub clones both work without
-      edits.
+      repo to `github.com/bjj/libpathime-python`.
+- [ ] **Before pushing this repo: update the submodule to latest** and commit
+      the new pin. `.gitmodules` already points at GitHub, but the local
+      checkout's config still fetches from orion (deliberately unsynced), so
+      pull the latest libpathime there first, then `git submodule sync` once
+      GitHub is live.
 - [ ] Turn on CI: `.github/workflows/ci.yml` is drafted but has never run —
       budget a debugging round. Linux builds with Ninja and tests against the
       install tree; Windows uses the `windows-msvc` preset with vcpkg's
