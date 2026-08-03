@@ -8,23 +8,26 @@ synchronous phone-keyboard-shaped API.
 Pure Python — nothing here compiles. The same package serves Linux and
 Windows; only libpathime itself is built per platform.
 
-## Install from a release
+## Install
 
-Each [release](https://github.com/bjj/libpathime-python/releases) carries the
-sdist and a pure wheel. The shared library comes from the matching
+The package is pure Python, on PyPI as of 0.1.2 (each
+[release](https://github.com/bjj/libpathime-python/releases) carries the same
+sdist and wheel). The shared library comes from the matching
 [libpathime release](https://github.com/bjj/libpathime/releases) — an install
-tree with `pathime-data/` already beside the library:
+tree with `pathime-data/` already beside the library, unpacking into a single
+directory named after the archive:
 
 ```bash
-pip install pathime-0.1.0-py3-none-any.whl
-mkdir libpathime-0.1.0 && tar xf libpathime-0.1.0-linux-x86_64.tar.gz -C libpathime-0.1.0
-export PATHIME_LIBRARY="$PWD/libpathime-0.1.0/lib/libpathime.so"
+pip install pathime
+tar xf libpathime-<version>-linux-x86_64.tar.gz
+export PATHIME_LIBRARY="$PWD/libpathime-<version>-linux-x86_64/lib/libpathime.so"
 ```
 
-(The archive has no top-level directory — it unpacks straight to `lib/`,
-`bin/`.)
+On Windows, unpack the zip and point `PATHIME_LIBRARY` at the unpacked
+directory's `bin\pathime.dll`.
 
-On Windows, unpack the zip and point `PATHIME_LIBRARY` at `bin\pathime.dll`.
+The binding and the library release in lockstep and the binding checks at
+load: it accepts a library of the same major.minor and refuses anything else.
 
 ## Build libpathime, point the binding at it
 

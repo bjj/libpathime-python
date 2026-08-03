@@ -27,7 +27,11 @@ import argparse
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Runnable straight from a checkout, where the package is not installed; the
+# guard is what lets CI's packaging job import this module against an
+# installed wheel instead (tests/conftest.py explains the switch).
+if not os.environ.get("PATHIME_TEST_INSTALLED"):
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import pathime
 from pathime import EngineId, Key, Mod, Option
