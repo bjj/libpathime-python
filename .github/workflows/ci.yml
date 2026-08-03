@@ -81,11 +81,13 @@ jobs:
           sudo apt-get install -y ninja-build pkg-config \
             libglib2.0-dev libsqlite3-dev uuid-dev
 
+      # dist-native, not dist/: python -m build owns dist/, and twine
+      # checking dist/* must see only the distributions.
       - name: Configure libpathime
         run: >
           cmake -S libpathime -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/dist
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/dist-native
           -DLIBPATHIME_REQUIRE_BACKENDS=ON
 
       - name: Build
@@ -106,7 +108,7 @@ jobs:
 
       - name: Install the wheel in a clean venv and test it
         env:
-          PATHIME_LIBRARY: ${{ github.workspace }}/dist/lib/libpathime.so
+          PATHIME_LIBRARY: ${{ github.workspace }}/dist-native/lib/libpathime.so
           PATHIME_TEST_INSTALLED: "1"
         run: |
           python -m venv /tmp/clean
