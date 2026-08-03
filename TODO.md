@@ -4,13 +4,8 @@ Upcoming work only; prune as things complete.
 
 ## Next
 
-- [ ] Release v0.1.2 in lockstep with libpathime (its RELEASING.md has the
-      order). Before tagging: bump `pyproject.toml` to 0.1.2 and the
-      submodule to libpathime's v0.1.2 tag. One-time setup first, in repo
-      settings and on pypi.org: create the `pypi` GitHub Environment with a
-      required reviewer, and register this repo's release workflow +
-      environment as the project's Trusted Publisher on PyPI (the `pathime`
-      name is still unclaimed — sooner is better).
+(nothing queued — v0.1.2 shipped 2026-08-02 in lockstep with libpathime,
+and `pip install pathime` is live on PyPI via Trusted Publishing)
 
 ## Later
 
