@@ -9,9 +9,15 @@ Library loading order:
    test runs use this.
 2. ``ctypes.util.find_library("pathime")`` — an installed library on the
    system loader's path.
-3. The platform's bare name (``libpathime.so.0`` / ``libpathime.so`` on Linux,
-   ``pathime.dll`` on Windows, ``libpathime.dylib`` on macOS), for a library
-   sitting on the loader path without ldconfig knowledge.
+3. The platform's bare names (``libpathime.so.0.1`` / ``libpathime.so`` on
+   Linux, ``pathime.dll`` on Windows, ``libpathime.dylib`` on macOS), for a
+   library sitting on the loader path without ldconfig knowledge.
+
+Whatever loads is then checked: pre-1.0 libpathime's compatibility promise is
+per-minor (its SONAME tracks the minor for the same reason), so the binding
+accepts exactly the major.minor it is written against and refuses anything
+else up front, rather than failing later on a missing symbol or a changed
+struct.
 
 On Windows the DLL's dependencies (the vendored backend DLLs) must be findable
 too; pass the directory holding them through ``os.add_dll_directory`` before
@@ -115,12 +121,23 @@ class pathime_option_info_t(ctypes.Structure):
 # Library loading
 # =========================================================================
 
+# The native major.minor this binding is written against. libpathime's
+# pre-1.0 promise is that compatibility holds within a minor and not across
+# one, so anything else is refused at load (see load_library).
+_SUPPORTED_MAJOR = 0
+_SUPPORTED_MINOR = 1
+
+
 def _candidate_names() -> list[str]:
     if sys.platform == "win32":
         return ["pathime.dll"]
+    # The versioned spellings are the SONAME (minor-tracking since 0.1.2)
+    # and its pre-0.1.2 major-only form, both of which the version check
+    # below accepts.
     if sys.platform == "darwin":
-        return ["libpathime.0.dylib", "libpathime.dylib"]
-    return ["libpathime.so.0", "libpathime.so"]
+        return ["libpathime.0.1.dylib", "libpathime.0.dylib",
+                "libpathime.dylib"]
+    return ["libpathime.so.0.1", "libpathime.so.0", "libpathime.so"]
 
 
 def load_library(path: str | None = None) -> ctypes.CDLL:
@@ -152,6 +169,17 @@ def load_library(path: str | None = None) -> ctypes.CDLL:
             )
 
     _declare(lib)
+
+    number = lib.pathime_version()
+    major, minor = number // 1_000_000, number // 1_000 % 1_000
+    if (major, minor) != (_SUPPORTED_MAJOR, _SUPPORTED_MINOR):
+        raise OSError(
+            "libpathime %s is not supported by this binding, which is "
+            "written against %d.%d.x"
+            % (lib.pathime_version_string().decode("utf-8"),
+               _SUPPORTED_MAJOR, _SUPPORTED_MINOR)
+        )
+
     return lib
 
 

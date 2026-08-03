@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # Opens a PR when the libpathime submodule's tracked branch moves — the
+  # bump arrives as a PR instead of a manual chore.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly

@@ -5,14 +5,25 @@ on:
     branches: [master]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Two Pythons on Linux: the declared floor (pyproject.toml's
+  # requires-python) and whatever is current — the day 3.9 breaks here is
+  # the day dropping it becomes a decision instead of an accident.
   linux:
+    name: linux-py${{ matrix.python }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.x"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -40,9 +51,9 @@ jobs:
       - name: Install
         run: cmake --install build
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
 
       - name: Test
         env:
@@ -50,6 +61,59 @@ jobs:
         run: |
           python -m pip install pytest
           python -m pytest -v
+
+  # The thing users install, not the checkout: build the sdist, build the
+  # wheel FROM the sdist (python -m build's default, which is what catches a
+  # MANIFEST gap), twine-check both, install the wheel into a clean venv and
+  # run the whole suite against it. On the floor Python, where packaging
+  # metadata fails first.
+  packaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config \
+            libglib2.0-dev libsqlite3-dev uuid-dev
+
+      - name: Configure libpathime
+        run: >
+          cmake -S libpathime -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/dist
+          -DLIBPATHIME_REQUIRE_BACKENDS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Install
+        run: cmake --install build
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.9"
+
+      - name: Build and check the distributions
+        run: |
+          python -m pip install build twine
+          python -m build
+          twine check --strict dist/*
+
+      - name: Install the wheel in a clean venv and test it
+        env:
+          PATHIME_LIBRARY: ${{ github.workspace }}/dist/lib/libpathime.so
+          PATHIME_TEST_INSTALLED: "1"
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/python -m pip install dist/*.whl pytest
+          /tmp/clean/bin/python -c 'import pathime; print(pathime.__file__)' \
+            | grep site-packages
+          /tmp/clean/bin/python -m pytest -v
 
   windows:
     runs-on: windows-2025
@@ -129,9 +193,9 @@ jobs:
       - name: Install
         run: cmake --install libpathime\build\windows-ninja
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.x"
 
       - name: Test
         env:

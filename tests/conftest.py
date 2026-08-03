@@ -13,7 +13,12 @@ import sys
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# By default the suite tests the checkout. CI's packaging job sets
+# PATHIME_TEST_INSTALLED to run the same suite against a wheel installed in a
+# clean environment instead — the src/ layout keeps the checkout copy off
+# sys.path unless this insert puts it there.
+if not os.environ.get("PATHIME_TEST_INSTALLED"):
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 _DEFAULT_LIBRARY = "/tmp/pathime-install/lib/libpathime.so"
 
