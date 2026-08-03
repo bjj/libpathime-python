@@ -53,7 +53,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build pkg-config \
-            libglib2.0-dev libsqlite3-dev uuid-dev
+            libsqlite3-dev uuid-dev
 
       - name: Build libpathime
         run: |

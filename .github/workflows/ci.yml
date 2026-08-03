@@ -33,7 +33,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build pkg-config \
-            libglib2.0-dev libsqlite3-dev uuid-dev
+            libsqlite3-dev uuid-dev
 
       # REQUIRE_BACKENDS turns a silently skipped backend into a configure
       # error. The install prefix is passed at configure time because
@@ -79,7 +79,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build pkg-config \
-            libglib2.0-dev libsqlite3-dev uuid-dev
+            libsqlite3-dev uuid-dev
 
       # dist-native, not dist/: python -m build owns dist/, and twine
       # checking dist/* must see only the distributions.
@@ -143,9 +143,9 @@ jobs:
 
       # restore/save rather than the combined action: the combined form saves
       # only when the whole job succeeds, so a failure after `vcpkg install`
-      # throws away a from-source glib build (~25 minutes). The exact-rev key
-      # rarely repeats across image rolls; the prefix fallback restores the
-      # newest previous tree and `vcpkg install` becomes a near-no-op.
+      # throws away the from-source builds. The exact-rev key rarely repeats
+      # across image rolls; the prefix fallback restores the newest previous
+      # tree and `vcpkg install` becomes a near-no-op.
       - name: Restore vcpkg installed tree
         id: vcpkg-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -154,8 +154,9 @@ jobs:
           key: vcpkg-windows-2025-${{ steps.vcpkg.outputs.rev }}
           restore-keys: vcpkg-windows-2025-
 
-      - name: Install pyzy's dependencies
-        run: vcpkg install glib:x64-windows sqlite3:x64-windows pkgconf:x64-windows
+      - name: Install external dependencies
+        # The triplet matches libpathime's Windows presets.
+        run: vcpkg install sqlite3:x64-windows-static-md
 
       - name: Save vcpkg installed tree
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
